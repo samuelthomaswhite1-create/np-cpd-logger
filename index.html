@@ -63,16 +63,42 @@
         .form-section .grid {
             @apply gap-6;
         }
-        input[type="date"], input[type="time"], input[type="number"], select, textarea {
-            @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4;
+        .form-section > div {
+            @apply flex flex-col;
+        }
+        .form-section > div > div {
+            @apply flex flex-col h-full;
+        }
+        .grid.grid-cols-1 {
+            @apply w-full;
+        }
+        .grid.md\:grid-cols-2 {
+            @apply grid-cols-1 md:grid-cols-2;
+        }
+        .grid.md\:grid-cols-2 > div {
+            @apply flex flex-col justify-start;
+        }
+        input[type="date"], input[type="time"], input[type="number"], select {
+            @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
             @apply bg-white text-gray-800 font-500 transition-all duration-200;
+            height: 48px;
+            line-height: 1.5;
+        }
+        textarea {
+            @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+            @apply bg-white text-gray-800 font-500 transition-all duration-200 resize-vertical;
+            min-height: 100px;
         }
         input[type="date"]:hover, input[type="time"]:hover, input[type="number"]:hover, select:hover, textarea:hover {
             @apply border-blue-400 shadow-sm;
         }
         label {
-            @apply block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide;
+            @apply block text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide;
             color: #1e40af;
+            line-height: 1.4;
+        }
+        .form-section > div > div {
+            @apply mb-4;
         }
         .btn {
             @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200;
@@ -106,7 +132,7 @@
 <body class="bg-gray-50">
     <div id="app" class="min-h-screen">
         <!-- Header -->
-        <header class="bg-gradient-to-r from-green-700 to-green-600 text-white shadow-lg sticky top-0 z-50">
+        <header class="bg-gradient-to-r from-blue-400 to-blue-300 text-white shadow-lg sticky top-0 z-50">
             <div class="max-w-6xl mx-auto px-4 py-4">
                 <div class="flex justify-between items-center mb-2">
                     <h1 class="text-2xl font-bold">🏥 NP CPD Logger</h1>
@@ -136,11 +162,7 @@
 
             <!-- TAB: NEW ENTRY -->
             <div id="tab-content-entry" class="tab-content">
-                <!-- De-Identification Warning -->
-                <div class="warning-banner">
-                    <strong>⚠️ HIPAA/Privacy Alert:</strong> Do NOT enter patient names, dates of birth, phone numbers, or Medicare numbers. Use de-identified Patient UR numbers only.
-                </div>
-
+    
                 <form id="entryForm" class="bg-white rounded-lg shadow-lg p-6">
                     <!-- Date & Time Section -->
                     <div class="form-section">
