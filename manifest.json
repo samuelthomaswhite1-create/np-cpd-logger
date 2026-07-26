@@ -1,0 +1,93 @@
+{
+  "name": "NP CPD Logger - Monash University",
+  "short_name": "CPD Logger",
+  "description": "Professional Continuing Professional Development logging app for Nurse Practitioner students",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23059669' width='192' height='192'/><circle cx='96' cy='60' r='20' fill='white'/><path d='M 60 100 Q 60 85 96 85 Q 132 85 132 100 L 132 140 Q 132 155 96 155 Q 60 155 60 140 Z' fill='white' opacity='0.9'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23059669' width='512' height='512'/><circle cx='256' cy='160' r='50' fill='white'/><path d='M 160 280 Q 160 220 256 220 Q 352 220 352 280 L 352 380 Q 352 420 256 420 Q 160 420 160 380 Z' fill='white' opacity='0.9'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23f3f4f6' width='540' height='720'/><rect fill='%23059669' y='0' width='540' height='60'/><text x='270' y='40' font-size='24' fill='white' text-anchor='middle' font-weight='bold'>NP CPD Logger</text><rect fill='white' x='20' y='80' width='500' height='100' rx='8'/><text x='30' y='105' font-size='14' fill='%23374151' font-weight='bold'>New Entry</text><text x='30' y='160' font-size='12' fill='%236b7280'>Supernumerary Hours: 2.5 hrs</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["medical", "health", "education"],
+  "screenshots_wide": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'><rect fill='%23f3f4f6' width='1280' height='720'/><rect fill='%23059669' y='0' width='1280' height='60'/><text x='640' y='40' font-size='28' fill='white' text-anchor='middle' font-weight='bold'>NP CPD Logger</text></svg>",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New CPD Entry",
+      "short_name": "New Entry",
+      "description": "Quickly log a new CPD episode",
+      "url": "./index.html?tab=entry",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23059669' width='96' height='96'/><text x='48' y='60' font-size='48' fill='white' text-anchor='middle' dominant-baseline='middle'>+</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "View Dashboard",
+      "short_name": "Dashboard",
+      "description": "Check your CPD progress and standards coverage",
+      "url": "./index.html?tab=dashboard",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23059669' width='96' height='96'/><text x='48' y='60' font-size='48' fill='white' text-anchor='middle' dominant-baseline='middle'>📊</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Export Data",
+      "short_name": "Export",
+      "description": "Export logged entries to Excel or JSON",
+      "url": "./index.html?tab=settings",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23059669' width='96' height='96'/><text x='48' y='60' font-size='48' fill='white' text-anchor='middle' dominant-baseline='middle'>💾</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "./index.html",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

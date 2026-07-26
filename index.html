@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional CPD logging app for NP students - Monash University">
+    <meta name="theme-color" content="#059669">
+    <title>NP CPD Logger - Monash University</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23059669' width='180' height='180'/><text x='50%' y='50%' font-size='80' fill='white' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>NP</text></svg>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --accent: #f59e0b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+        }
+        .clinic-card {
+            @apply bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 mb-4;
+        }
+        .nmba-badge {
+            @apply inline-block px-3 py-1 rounded-full text-xs font-semibold text-white bg-green-600 mr-2 mb-2;
+        }
+        .nmba-badge.selected {
+            @apply bg-emerald-700 ring-2 ring-yellow-400;
+        }
+        .warning-banner {
+            @apply bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 mb-4;
+        }
+        .progress-bar {
+            @apply w-full bg-gray-200 rounded-full h-2 mb-2;
+        }
+        .progress-bar-fill {
+            @apply bg-green-600 h-2 rounded-full transition-all duration-300;
+        }
+        .form-section {
+            @apply bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4;
+        }
+        input[type="date"], input[type="time"], input[type="number"], select, textarea {
+            @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-3;
+        }
+        label {
+            @apply block text-sm font-semibold text-gray-700 mb-2;
+        }
+        .btn {
+            @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200;
+        }
+        .btn-primary {
+            @apply bg-green-600 text-white hover:bg-green-700 active:scale-95;
+        }
+        .btn-secondary {
+            @apply bg-gray-300 text-gray-800 hover:bg-gray-400;
+        }
+        .btn-success {
+            @apply bg-blue-600 text-white hover:bg-blue-700;
+        }
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700;
+        }
+        .de-id-check {
+            @apply text-xs font-mono p-3 bg-gray-50 border border-gray-300 rounded mt-2;
+        }
+        .entry-item {
+            @apply bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow;
+        }
+        .offline-indicator {
+            @apply bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold;
+        }
+        .sync-status {
+            @apply bg-blue-100 border border-blue-400 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-green-700 to-green-600 text-white shadow-lg sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h1 class="text-2xl font-bold">🏥 NP CPD Logger</h1>
+                    <div id="syncStatus" class="text-right"></div>
+                </div>
+                <p class="text-green-100 text-sm">Monash University Nurse Practitioner Master's Programme</p>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <!-- Navigation Tabs -->
+            <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-300">
+                <button onclick="switchTab('entry')" id="tab-entry" class="tab-btn pb-3 px-4 border-b-4 border-green-600 font-semibold text-green-700">
+                    ➕ New Entry
+                </button>
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn pb-3 px-4 border-b-4 border-transparent text-gray-600 hover:text-gray-800">
+                    📊 Dashboard
+                </button>
+                <button onclick="switchTab('entries')" id="tab-entries" class="tab-btn pb-3 px-4 border-b-4 border-transparent text-gray-600 hover:text-gray-800">
+                    📋 View Entries
+                </button>
+                <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn pb-3 px-4 border-b-4 border-transparent text-gray-600 hover:text-gray-800">
+                    ⚙️ Settings
+                </button>
+            </div>
+
+            <!-- TAB: NEW ENTRY -->
+            <div id="tab-content-entry" class="tab-content">
+                <!-- De-Identification Warning -->
+                <div class="warning-banner">
+                    <strong>⚠️ HIPAA/Privacy Alert:</strong> Do NOT enter patient names, dates of birth, phone numbers, or Medicare numbers. Use de-identified Patient UR numbers only.
+                </div>
+
+                <form id="entryForm" class="bg-white rounded-lg shadow-lg p-6">
+                    <!-- Date & Time Section -->
+                    <div class="form-section">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📅 Date & Supernumerary Hours</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label>Episode Date *</label>
+                                <input type="date" id="episodeDate" required>
+                            </div>
+                            <div>
+                                <label>Supernumerary Time Spent (Hours) *</label>
+                                <input type="number" id="hoursSpent" min="0.25" step="0.25" placeholder="e.g., 2.5" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient & Clinical Episode Data -->
+                    <div class="form-section">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">🩺 Patient & Clinical Episode</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label>Patient UR Number (De-Identified) *</label>
+                                <input type="text" id="patientUR" placeholder="e.g., URN-12345" required>
+                                <small class="text-gray-500">UR numbers only—no names</small>
+                            </div>
+                            <div>
+                                <label>Consultant/Mentor Discussed With *</label>
+                                <input type="text" id="mentorName" placeholder="e.g., Dr. Smith" required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4 mt-4">
+                            <div>
+                                <label>Presenting Problem *</label>
+                                <textarea id="presentingProblem" rows="2" placeholder="Chief complaint and initial clinical presentation" required></textarea>
+                            </div>
+                            <div>
+                                <label>Clinical Assessment Undertaken *</label>
+                                <textarea id="clinicalAssessment" rows="2" placeholder="Examination findings, investigations ordered, diagnostic reasoning" required></textarea>
+                            </div>
+                            <div>
+                                <label>Plan Made *</label>
+                                <textarea id="planMade" rows="2" placeholder="Clinical management plan developed" required></textarea>
+                            </div>
+                            <div>
+                                <label>Actions Taken *</label>
+                                <textarea id="actionsTaken" rows="2" placeholder="Interventions implemented, referrals made, prescriptions issued" required></textarea>
+                            </div>
+                            <div>
+                                <label>Outcome / Follow-up / Referral</label>
+                                <textarea id="outcome" rows="2" placeholder="Patient outcome, follow-up plan, onward referrals"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Domain Categorization -->
+                    <div class="form-section">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">🎯 Domain Categorization</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label>Primary Domain *</label>
+                                <select id="primaryDomain" required>
+                                    <option value="">-- Select Domain --</option>
+                                    <option value="Clinical Care">Clinical Care</option>
+                                    <option value="Leadership">Leadership</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Research">Research</option>
+                                    <option value="Professional Mentoring">Professional Mentoring</option>
+                                    <option value="Self-Directed Learning">Self-Directed Learning</option>
+                                    <option value="Interdisciplinary Skill Development">Interdisciplinary Skill Development</option>
+                                    <option value="Other Education">Other Education</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Sub-Activity Type *</label>
+                                <select id="subActivity" required>
+                                    <option value="">-- Select Activity --</option>
+                                    <option value="Full consultation sequence">Full consultation sequence</option>
+                                    <option value="Advanced assessment">Advanced assessment</option>
+                                    <option value="Diagnostic test review">Diagnostic test review</option>
+                                    <option value="Procedural">Procedural</option>
+                                    <option value="Clinical management plan">Clinical management plan</option>
+                                    <option value="Prescribing">Prescribing</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NMBA Standards Mapping -->
+                    <div class="form-section">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📜 NMBA NP Standards Mapping</h3>
+                        <p class="text-sm text-gray-600 mb-4">Select all applicable standards (at least 1 required)</p>
+
+                        <div class="mb-4">
+                            <strong class="text-green-700">Standard 1: Assesses using diagnostic capability</strong>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <button type="button" onclick="toggleStandard('1.1')" class="standard-btn" data-standard="1.1">1.1 Collects information</button>
+                                <button type="button" onclick="toggleStandard('1.2')" class="standard-btn" data-standard="1.2">1.2 Performs physical exam</button>
+                                <button type="button" onclick="toggleStandard('1.3')" class="standard-btn" data-standard="1.3">1.3 Requests investigations</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <strong class="text-green-700">Standard 2: Plans care and engages others</strong>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <button type="button" onclick="toggleStandard('2.1')" class="standard-btn" data-standard="2.1">2.1 Synthesis</button>
+                                <button type="button" onclick="toggleStandard('2.2')" class="standard-btn" data-standard="2.2">2.2 Develops plan</button>
+                                <button type="button" onclick="toggleStandard('2.3')" class="standard-btn" data-standard="2.3">2.3 Engages patient</button>
+                                <button type="button" onclick="toggleStandard('2.4')" class="standard-btn" data-standard="2.4">2.4 Considers context</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <strong class="text-green-700">Standard 3: Prescribes & implements interventions</strong>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <button type="button" onclick="toggleStandard('3.1')" class="standard-btn" data-standard="3.1">3.1 Applies evidence</button>
+                                <button type="button" onclick="toggleStandard('3.2')" class="standard-btn" data-standard="3.2">3.2 Performs procedures</button>
+                                <button type="button" onclick="toggleStandard('3.3')" class="standard-btn" data-standard="3.3">3.3 Prescribes safely</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <strong class="text-green-700">Standard 4: Supports health systems</strong>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <button type="button" onclick="toggleStandard('4.1')" class="standard-btn" data-standard="4.1">4.1 Contributes to systems</button>
+                                <button type="button" onclick="toggleStandard('4.2')" class="standard-btn" data-standard="4.2">4.2 Champions safety</button>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="selectedStandards" value="">
+                    </div>
+
+                    <!-- Extension Details -->
+                    <div class="form-section">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">🔧 Extension Details (Optional)</h3>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label>Diagnostics (e.g., CXR/ECG ordered & interpreted)</label>
+                                <textarea id="diagnostics" rows="2" placeholder="Details of diagnostic interventions"></textarea>
+                            </div>
+                            <div>
+                                <label>Prescribing (e.g., medications, dose adjustments)</label>
+                                <textarea id="prescribing" rows="2" placeholder="Prescribing details"></textarea>
+                            </div>
+                            <div>
+                                <label>Admit/Discharge Details</label>
+                                <textarea id="admitDischarge" rows="2" placeholder="Hospital admission or discharge information"></textarea>
+                            </div>
+                            <div>
+                                <label>Referral Details</label>
+                                <textarea id="referralDetails" rows="2" placeholder="Referral information"></textarea>
+                            </div>
+                            <div>
+                                <label>Certificates Required (e.g., WorkCover)</label>
+                                <input type="text" id="certificates" placeholder="e.g., WorkCover, Medical certificate">
+                            </div>
+                            <div>
+                                <label>Additional Comments</label>
+                                <textarea id="additionalComments" rows="2" placeholder="Any other relevant information"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- De-Identification Verification -->
+                    <div class="form-section bg-yellow-50 border-l-4 border-yellow-400">
+                        <h3 class="text-lg font-bold text-yellow-800 mb-4">✅ De-Identification Check</h3>
+                        <button type="button" onclick="checkDeIdentification()" class="btn btn-primary mb-4">🔍 Verify De-Identification</button>
+                        <div id="deIdResult" class="de-id-check" style="display:none;"></div>
+                    </div>
+
+                    <!-- Auto-Synthesis & Submit -->
+                    <div class="form-section bg-blue-50 border-l-4 border-blue-400">
+                        <h3 class="text-lg font-bold text-blue-800 mb-4">🤖 Auto-Synthesis</h3>
+                        <button type="button" onclick="synthesizeBrief()" class="btn btn-success mb-4">Generate Brief Description</button>
+                        <div id="synthesisOutput" class="p-4 bg-white border border-blue-200 rounded mt-2" style="display:none;">
+                            <strong>Generated Brief Description:</strong>
+                            <p id="synthesisText" class="text-sm text-gray-700 mt-2 italic"></p>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex gap-3 mt-6">
+                        <button type="submit" class="btn btn-primary flex-1 py-3 text-lg">💾 Save CPD Entry</button>
+                        <button type="button" onclick="clearForm()" class="btn btn-secondary flex-1 py-3 text-lg">🔄 Clear Form</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB: DASHBOARD -->
+            <div id="tab-content-dashboard" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Total Hours -->
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-6 shadow-lg">
+                        <div class="text-4xl font-bold" id="totalHours">0</div>
+                        <div class="text-blue-100">Total Supernumerary Hours Logged</div>
+                    </div>
+
+                    <!-- Total Entries -->
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-6 shadow-lg">
+                        <div class="text-4xl font-bold" id="totalEntries">0</div>
+                        <div class="text-green-100">CPD Episodes Recorded</div>
+                    </div>
+                </div>
+
+                <!-- NMBA Standards Coverage -->
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-3">📊 NMBA Standards Evidence Distribution</h3>
+                    <div id="standardsCoverage" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Domain Distribution -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-3">🎯 CPD by Domain</h3>
+                    <div id="domainDistribution" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: VIEW ENTRIES -->
+            <div id="tab-content-entries" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">📋 Logged CPD Entries</h2>
+                    <div class="flex gap-2">
+                        <input type="text" id="searchEntries" placeholder="🔍 Search entries..." class="px-4 py-2 border border-gray-300 rounded-lg">
+                        <button onclick="sortEntries()" class="btn btn-secondary">📆 Sort by Date</button>
+                    </div>
+                </div>
+                <div id="entriesList" class="space-y-3">
+                    <!-- Populated by JavaScript -->
+                </div>
+                <div id="noEntries" class="text-center py-12 text-gray-500">
+                    <p class="text-lg">No entries logged yet. Start by creating a new entry!</p>
+                </div>
+            </div>
+
+            <!-- TAB: SETTINGS & EXPORT -->
+            <div id="tab-content-settings" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Export Section -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">📥 Export Data</h3>
+
+                        <div class="mb-4">
+                            <button onclick="exportToExcel()" class="btn btn-success w-full py-3 mb-2">
+                                📊 Export to Monash CPD Excel Template
+                            </button>
+                            <small class="text-gray-600">Will prompt to select your Template CPD Log.xlsx</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <button onclick="exportAsJSON()" class="btn btn-primary w-full py-3 mb-2">
+                                💾 Backup as JSON
+                            </button>
+                            <small class="text-gray-600">Download all entries for backup or sync</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <button onclick="importFromJSON()" class="btn btn-secondary w-full py-3">
+                                📤 Restore from JSON
+                            </button>
+                            <small class="text-gray-600">Load previously backed up entries</small>
+                        </div>
+                    </div>
+
+                    <!-- App Settings -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">⚙️ App Settings</h3>
+
+                        <div class="mb-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="autoBackup" checked class="w-4 h-4 mr-2">
+                                <span class="text-gray-700">Auto-backup every 10 entries</span>
+                            </label>
+                        </div>
+
+                        <div class="mb-4">
+                            <label>Student Name (for records)</label>
+                            <input type="text" id="studentName" placeholder="Your full name" class="w-full px-3 py-2 border border-gray-300 rounded">
+                        </div>
+
+                        <div class="mb-4">
+                            <label>Student ID (Monash)</label>
+                            <input type="text" id="studentID" placeholder="Your student ID" class="w-full px-3 py-2 border border-gray-300 rounded">
+                        </div>
+
+                        <button onclick="clearAllData()" class="btn btn-danger w-full py-2 mt-4">
+                            🗑️ Clear All Data (Irreversible)
+                        </button>
+                    </div>
+
+                    <!-- Storage Info -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 md:col-span-2">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">💾 Storage Information</h3>
+                        <div id="storageInfo" class="text-gray-700 space-y-2">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-gray-300 py-6 mt-12">
+            <div class="max-w-6xl mx-auto px-4 text-center">
+                <p class="text-sm">NP CPD Logger v1.0 | Offline-First PWA | <a href="#" onclick="updateServiceWorker()" class="text-green-400 hover:text-green-300">Check for updates</a></p>
+                <p class="text-xs text-gray-500 mt-2">Works offline. Data stored locally on your device. Never syncs without explicit consent.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Hidden file input for template upload & JSON import -->
+    <input type="file" id="templateFileInput" accept=".xlsx" style="display:none;">
+    <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+
+    <script>
+        // ============================================
+        // APP STATE & INITIALIZATION
+        // ============================================
+
+        let appState = {
+            entries: [],
+            selectedStandards: [],
+            isDirty: false
+        };
+
+        const STORAGE_KEY = 'npCpdLogger_entries';
+        const SETTINGS_KEY = 'npCpdLogger_settings';
+        const STANDARDS = ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '2.4', '3.1', '3.2', '3.3', '4.1', '4.2'];
+
+        // Load data on startup
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            registerServiceWorker();
+            setupEventListeners();
+            updateDashboard();
+            updateStorageInfo();
+            updateSyncStatus();
+
+            // Auto-backup check
+            if (localStorage.getItem(SETTINGS_KEY)) {
+                const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+                document.getElementById('autoBackup').checked = settings.autoBackup !== false;
+                if (document.getElementById('studentName')) document.getElementById('studentName').value = settings.studentName || '';
+                if (document.getElementById('studentID')) document.getElementById('studentID').value = settings.studentID || '';
+            }
+        });
+
+        // Register Service Worker
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('✅ SW registered:', reg))
+                    .catch(err => console.log('❌ SW registration failed:', err));
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('entryForm').addEventListener('submit', saveEntry);
+
+            // Save settings on blur
+            ['studentName', 'studentID', 'autoBackup'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', saveSettings);
+                }
+            });
+
+            // Search functionality
+            document.getElementById('searchEntries').addEventListener('input', filterEntries);
+        }
+
+        // ============================================
+        // STORAGE FUNCTIONS
+        // ============================================
+
+        function loadFromStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            appState.entries = stored ? JSON.parse(stored) : [];
+        }
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.entries));
+            appState.isDirty = true;
+            updateSyncStatus();
+        }
+
+        function saveSettings() {
+            const settings = {
+                autoBackup: document.getElementById('autoBackup').checked,
+                studentName: document.getElementById('studentName').value,
+                studentID: document.getElementById('studentID').value
+            };
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        }
+
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-green-600', 'text-green-700', 'font-semibold');
+                btn.classList.add('border-transparent', 'text-gray-600');
+            });
+
+            // Show selected tab
+            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('border-green-600', 'text-green-700', 'font-semibold');
+            document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-gray-600');
+
+            // Update dashboard when switching to it
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            }
+
+            // Update entries list when switching to it
+            if (tabName === 'entries') {
+                displayEntries();
+            }
+        }
+
+        // ============================================
+        // NMBA STANDARDS SELECTION
+        // ============================================
+
+        function toggleStandard(standard) {
+            const btn = document.querySelector(`[data-standard="${standard}"]`);
+            const input = document.getElementById('selectedStandards');
+            let standards = input.value ? input.value.split(',') : [];
+
+            if (standards.includes(standard)) {
+                standards = standards.filter(s => s !== standard);
+                btn.classList.remove('nmba-badge', 'selected');
+                btn.classList.add('bg-gray-300', 'text-gray-800');
+            } else {
+                standards.push(standard);
+                btn.classList.add('nmba-badge', 'selected');
+                btn.classList.remove('bg-gray-300', 'text-gray-800');
+            }
+
+            input.value = standards.join(',');
+            appState.selectedStandards = standards;
+        }
+
+        // ============================================
+        // DE-IDENTIFICATION CHECK
+        // ============================================
+
+        function checkDeIdentification() {
+            const patterns = {
+                'Name (common first names)': /\b(john|jane|mary|michael|smith|johnson|williams|brown|jones)\b/gi,
+                'Australian phone number': /\b(\+61|0)[0-9\s\-]{7,}\b/g,
+                'Medicare number': /\b[0-9]{10}\b/g,
+                'Date of birth (DD/MM/YYYY)': /\b(0[1-9]|[12][0-9]|3[01])[-\/](0[1-9]|1[012])[-\/](19|20)\d{2}\b/g,
+                'Email address': /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+            };
+
+            const fieldsToCheck = [
+                'presentingProblem', 'clinicalAssessment', 'planMade',
+                'actionsTaken', 'outcome', 'diagnostics', 'prescribing',
+                'admitDischarge', 'referralDetails', 'additionalComments'
+            ];
+
+            let findings = [];
+            fieldsToCheck.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field && field.value) {
+                    for (const [category, pattern] of Object.entries(patterns)) {
+                        const matches = field.value.match(pattern);
+                        if (matches) {
+                            findings.push({
+                                field: fieldId,
+                                category: category,
+                                matches: matches
+                            });
+                        }
+                    }
+                }
+            });
+
+            const resultDiv = document.getElementById('deIdResult');
+            if (findings.length === 0) {
+                resultDiv.innerHTML = '<span style="color: #10b981; font-weight: bold;">✅ PASS: Entry appears properly de-identified</span>';
+                resultDiv.style.display = 'block';
+            } else {
+                let html = '<span style="color: #ef4444; font-weight: bold;">⚠️ POTENTIAL DE-ID ISSUES FOUND:</span><ul style="margin-top: 8px; font-size: 0.875rem;">';
+                findings.forEach(finding => {
+                    html += `<li><strong>${finding.category}</strong> in "${finding.field}": ${finding.matches.join(', ')}</li>`;
+                });
+                html += '</ul>';
+                resultDiv.innerHTML = html;
+                resultDiv.style.display = 'block';
+            }
+        }
+
+        // ============================================
+        // AUTO-SYNTHESIS
+        // ============================================
+
+        function synthesizeBrief() {
+            const presenting = document.getElementById('presentingProblem').value;
+            const assessment = document.getElementById('clinicalAssessment').value;
+            const plan = document.getElementById('planMade').value;
+            const standards = appState.selectedStandards.join(', ');
+
+            if (!presenting || !assessment || !plan || !standards) {
+                alert('Please complete: Presenting Problem, Assessment, Plan, and select at least one NMBA Standard');
+                return;
+            }
+
+            const brief = `${presenting} → Assessment: ${assessment.substring(0, 50)}... → Plan: ${plan.substring(0, 50)}... [Standards: ${standards}]`;
+
+            document.getElementById('synthesisText').textContent = brief;
+            document.getElementById('synthesisOutput').style.display = 'block';
+        }
+
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
+
+        function saveEntry(e) {
+            e.preventDefault();
+
+            if (!document.getElementById('selectedStandards').value) {
+                alert('Please select at least one NMBA Standard');
+                return;
+            }
+
+            const entry = {
+                id: Date.now().toString(),
+                episodeDate: document.getElementById('episodeDate').value,
+                hoursSpent: parseFloat(document.getElementById('hoursSpent').value),
+                patientUR: document.getElementById('patientUR').value,
+                mentorName: document.getElementById('mentorName').value,
+                presentingProblem: document.getElementById('presentingProblem').value,
+                clinicalAssessment: document.getElementById('clinicalAssessment').value,
+                planMade: document.getElementById('planMade').value,
+                actionsTaken: document.getElementById('actionsTaken').value,
+                outcome: document.getElementById('outcome').value,
+                primaryDomain: document.getElementById('primaryDomain').value,
+                subActivity: document.getElementById('subActivity').value,
+                selectedStandards: document.getElementById('selectedStandards').value,
+                diagnostics: document.getElementById('diagnostics').value,
+                prescribing: document.getElementById('prescribing').value,
+                admitDischarge: document.getElementById('admitDischarge').value,
+                referralDetails: document.getElementById('referralDetails').value,
+                certificates: document.getElementById('certificates').value,
+                additionalComments: document.getElementById('additionalComments').value,
+                createdAt: new Date().toISOString()
+            };
+
+            appState.entries.push(entry);
+            saveToStorage();
+
+            alert('✅ CPD entry saved successfully!');
+            clearForm();
+            updateDashboard();
+        }
+
+        function clearForm() {
+            document.getElementById('entryForm').reset();
+            document.getElementById('selectedStandards').value = '';
+            document.querySelectorAll('.standard-btn').forEach(btn => {
+                btn.classList.remove('nmba-badge', 'selected');
+                btn.classList.add('bg-gray-300', 'text-gray-800');
+            });
+            document.getElementById('synthesisOutput').style.display = 'none';
+            document.getElementById('deIdResult').style.display = 'none';
+        }
+
+        // ============================================
+        // DASHBOARD & DISPLAY
+        // ============================================
+
+        function updateDashboard() {
+            if (!appState.entries.length) {
+                document.getElementById('totalHours').textContent = '0';
+                document.getElementById('totalEntries').textContent = '0';
+                return;
+            }
+
+            // Total hours
+            const totalHours = appState.entries.reduce((sum, e) => sum + (e.hoursSpent || 0), 0);
+            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            document.getElementById('totalEntries').textContent = appState.entries.length;
+
+            // NMBA Standards Coverage
+            const standardsCount = {};
+            STANDARDS.forEach(s => standardsCount[s] = 0);
+
+            appState.entries.forEach(entry => {
+                if (entry.selectedStandards) {
+                    entry.selectedStandards.split(',').forEach(s => {
+                        if (standardsCount.hasOwnProperty(s)) {
+                            standardsCount[s]++;
+                        }
+                    });
+                }
+            });
+
+            let coverageHTML = '';
+            ['1.1', '1.2', '1.3'].forEach(s => {
+                const count = standardsCount[s];
+                const pct = appState.entries.length > 0 ? Math.round((count / appState.entries.length) * 100) : 0;
+                coverageHTML += generateProgressCard(`Standard ${s}`, count, appState.entries.length, pct);
+            });
+            ['2.1', '2.2', '2.3', '2.4'].forEach(s => {
+                const count = standardsCount[s];
+                const pct = appState.entries.length > 0 ? Math.round((count / appState.entries.length) * 100) : 0;
+                coverageHTML += generateProgressCard(`Standard ${s}`, count, appState.entries.length, pct);
+            });
+            ['3.1', '3.2', '3.3'].forEach(s => {
+                const count = standardsCount[s];
+                const pct = appState.entries.length > 0 ? Math.round((count / appState.entries.length) * 100) : 0;
+                coverageHTML += generateProgressCard(`Standard ${s}`, count, appState.entries.length, pct);
+            });
+            ['4.1', '4.2'].forEach(s => {
+                const count = standardsCount[s];
+                const pct = appState.entries.length > 0 ? Math.round((count / appState.entries.length) * 100) : 0;
+                coverageHTML += generateProgressCard(`Standard ${s}`, count, appState.entries.length, pct);
+            });
+
+            document.getElementById('standardsCoverage').innerHTML = coverageHTML;
+
+            // Domain Distribution
+            const domainCount = {};
+            appState.entries.forEach(entry => {
+                const domain = entry.primaryDomain || 'Uncategorized';
+                domainCount[domain] = (domainCount[domain] || 0) + 1;
+            });
+
+            let domainHTML = '';
+            Object.entries(domainCount).forEach(([domain, count]) => {
+                const pct = Math.round((count / appState.entries.length) * 100);
+                domainHTML += `
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <strong class="text-gray-700">${domain}</strong>
+                            <span class="text-sm font-semibold text-green-600">${count} (${pct}%)</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('domainDistribution').innerHTML = domainHTML;
+        }
+
+        function generateProgressCard(label, count, total, pct) {
+            return `
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <strong class="text-gray-700">${label}</strong>
+                        <span class="text-sm font-semibold text-green-600">${count}/${total}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: ${pct}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-600 mt-1">${pct}% coverage</div>
+                </div>
+            `;
+        }
+
+        function displayEntries() {
+            const list = document.getElementById('entriesList');
+            const noEntries = document.getElementById('noEntries');
+
+            if (!appState.entries.length) {
+                list.innerHTML = '';
+                noEntries.style.display = 'block';
+                return;
+            }
+
+            noEntries.style.display = 'none';
+            list.innerHTML = appState.entries.map(entry => `
+                <div class="entry-item bg-gradient-to-r from-blue-50 to-green-50">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${entry.presentingProblem.substring(0, 50)}...</h4>
+                            <p class="text-sm text-gray-600">${entry.episodeDate} • ${entry.hoursSpent}hrs</p>
+                        </div>
+                        <button onclick="deleteEntry('${entry.id}')" class="btn btn-danger text-xs py-1 px-2">Delete</button>
+                    </div>
+                    <p class="text-xs text-gray-700 mb-2"><strong>Domain:</strong> ${entry.primaryDomain}</p>
+                    <p class="text-xs text-green-700"><strong>Standards:</strong> ${entry.selectedStandards}</p>
+                </div>
+            `).join('');
+        }
+
+        function filterEntries() {
+            const searchTerm = document.getElementById('searchEntries').value.toLowerCase();
+            const list = document.getElementById('entriesList');
+
+            const filtered = appState.entries.filter(e =>
+                e.presentingProblem.toLowerCase().includes(searchTerm) ||
+                e.patientUR.toLowerCase().includes(searchTerm) ||
+                e.primaryDomain.toLowerCase().includes(searchTerm)
+            );
+
+            if (!filtered.length) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-8">No entries match your search</p>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(entry => `
+                <div class="entry-item bg-gradient-to-r from-blue-50 to-green-50">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${entry.presentingProblem.substring(0, 50)}...</h4>
+                            <p class="text-sm text-gray-600">${entry.episodeDate} • ${entry.hoursSpent}hrs</p>
+                        </div>
+                        <button onclick="deleteEntry('${entry.id}')" class="btn btn-danger text-xs py-1 px-2">Delete</button>
+                    </div>
+                    <p class="text-xs text-gray-700 mb-2"><strong>Domain:</strong> ${entry.primaryDomain}</p>
+                    <p class="text-xs text-green-700"><strong>Standards:</strong> ${entry.selectedStandards}</p>
+                </div>
+            `).join('');
+        }
+
+        function sortEntries() {
+            appState.entries.sort((a, b) => new Date(b.episodeDate) - new Date(a.episodeDate));
+            displayEntries();
+        }
+
+        function deleteEntry(id) {
+            if (confirm('Are you sure? This cannot be undone.')) {
+                appState.entries = appState.entries.filter(e => e.id !== id);
+                saveToStorage();
+                displayEntries();
+                updateDashboard();
+            }
+        }
+
+        // ============================================
+        // EXCEL EXPORT
+        // ============================================
+
+        function exportToExcel() {
+            // Prompt user to select template file
+            const fileInput = document.getElementById('templateFileInput');
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+
+                        // Get the Workplace Log sheet
+                        let worksheetName = 'Workplace Log';
+                        if (!workbook.SheetNames.includes(worksheetName)) {
+                            worksheetName = workbook.SheetNames[0];
+                        }
+                        const worksheet = workbook.Sheets[worksheetName];
+
+                        // MONASH TEMPLATE COLUMN MAPPING (Data starts at Row 6)
+                        // Columns: B=Date, C=Hours, D=Cumulative, F=Brief Desc, G=Summary/Standards, H=Domain
+                        //          I-L=Standards 1-4, M=Diagnostics, N=Prescribing, O=Admit/Discharge, P=Referral, Q=Certificates, R=Comments
+
+                        let rowIndex = 6; // Row 6 is first data row in template
+                        appState.entries.forEach(entry => {
+                            // Calculate cumulative hours up to this entry
+                            const cumulativeHours = appState.entries
+                                .filter(e => new Date(e.episodeDate) <= new Date(entry.episodeDate))
+                                .reduce((sum, e) => sum + (e.hoursSpent || 0), 0);
+
+                            // Column mapping for Monash template
+                            const cellValues = {
+                                'B': entry.episodeDate,                                      // Date
+                                'C': entry.hoursSpent,                                      // Supernumerary time
+                                'D': cumulativeHours,                                       // Cumulative hours
+                                'F': entry.presentingProblem + ' → ' + entry.clinicalAssessment + ' → ' + entry.planMade, // Brief description
+                                'G': `Standards linked: ${entry.selectedStandards}. Plan: ${entry.planMade}. Actions: ${entry.actionsTaken}`,  // Summary/how linked
+                                'H': entry.primaryDomain,                                  // Domain
+                                'I': entry.selectedStandards.includes('1.1') || entry.selectedStandards.includes('1.2') || entry.selectedStandards.includes('1.3') ? 'X' : '',  // Standard 1
+                                'J': entry.selectedStandards.includes('2.1') || entry.selectedStandards.includes('2.2') || entry.selectedStandards.includes('2.3') || entry.selectedStandards.includes('2.4') ? 'X' : '',  // Standard 2
+                                'K': entry.selectedStandards.includes('3.1') || entry.selectedStandards.includes('3.2') || entry.selectedStandards.includes('3.3') ? 'X' : '',  // Standard 3
+                                'L': entry.selectedStandards.includes('4.1') || entry.selectedStandards.includes('4.2') ? 'X' : '',  // Standard 4
+                                'M': entry.diagnostics,                                    // Diagnostics
+                                'N': entry.prescribing,                                    // Prescribing
+                                'O': entry.admitDischarge,                                 // Admit/Discharge
+                                'P': entry.referralDetails,                                // Referral
+                                'Q': entry.certificates,                                   // Certificates
+                                'R': entry.additionalComments                              // Other Comments
+                            };
+
+                            // Write to cells
+                            Object.entries(cellValues).forEach(([col, value]) => {
+                                const cellRef = XLSX.utils.encode_cell({ r: rowIndex - 1, c: XLSX.utils.decode_col(col) });
+                                if (value) {
+                                    worksheet[cellRef] = { v: value, t: 's' };
+                                }
+                            });
+
+                            rowIndex++;
+                        });
+
+                        // Download the modified workbook
+                        XLSX.writeFile(workbook, `CPD_Log_${new Date().toISOString().split('T')[0]}.xlsx`);
+                        alert('✅ Excel export successful! Entries inserted into Workplace Log sheet starting at Row 6.');
+                    } catch (error) {
+                        alert('❌ Error processing Excel file: ' + error.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+            fileInput.click();
+        }
+
+        // ============================================
+        // JSON BACKUP & RESTORE
+        // ============================================
+
+        function exportAsJSON() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                appVersion: '1.0',
+                entries: appState.entries,
+                settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `CPD_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importFromJSON() {
+            const fileInput = document.getElementById('jsonFileInput');
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+
+                        if (confirm(`Import ${data.entries.length} entries? This will merge with existing data.`)) {
+                            appState.entries = [...appState.entries, ...data.entries];
+                            saveToStorage();
+                            alert('✅ Backup restored successfully!');
+                            updateDashboard();
+                            displayEntries();
+                        }
+                    } catch (error) {
+                        alert('❌ Error reading backup file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            fileInput.click();
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function updateStorageInfo() {
+            const entries = appState.entries.length;
+            const size = new Blob([JSON.stringify(appState.entries)]).size;
+            const sizeKB = (size / 1024).toFixed(2);
+
+            document.getElementById('storageInfo').innerHTML = `
+                <div class="bg-blue-50 p-3 rounded border border-blue-200">
+                    <strong>📊 Current Storage Usage:</strong>
+                    <p class="text-sm text-gray-700 mt-1">${entries} entries logged</p>
+                    <p class="text-sm text-gray-700">${sizeKB} KB of local storage used</p>
+                    <p class="text-xs text-gray-500 mt-2">Your browser provides approximately 5-10 MB per website.</p>
+                </div>
+            `;
+        }
+
+        function updateSyncStatus() {
+            const status = navigator.onLine ?
+                '<span class="sync-status">🟢 Online</span>' :
+                '<span class="offline-indicator">🟡 Offline Mode</span>';
+
+            document.getElementById('syncStatus').innerHTML = status;
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ This will PERMANENTLY delete all entries. This cannot be undone. Are you sure?')) {
+                if (confirm('Last warning: Really delete everything?')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    appState.entries = [];
+                    alert('✅ All data cleared.');
+                    location.reload();
+                }
+            }
+        }
+
+        function updateServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(reg => reg.update());
+                });
+                alert('Checking for updates...');
+            }
+        }
+
+        // Online/Offline listeners
+        window.addEventListener('online', updateSyncStatus);
+        window.addEventListener('offline', updateSyncStatus);
+
+        // Update dashboard periodically
+        setInterval(() => {
+            if (appState.isDirty) {
+                updateDashboard();
+                appState.isDirty = false;
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

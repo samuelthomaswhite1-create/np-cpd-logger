@@ -1,0 +1,237 @@
+================================================================================
+                    NP CPD LOGGER - QUICK START GUIDE
+                     Monash University Edition v1.0
+================================================================================
+
+📋 WHAT YOU HAVE:
+
+  ✓ index.html         - Complete PWA app (all-in-one file)
+  ✓ manifest.json      - PWA installer configuration
+  ✓ sw.js             - Service worker (offline support)
+  ✓ README.md         - Feature overview & tips
+  ✓ SETUP.md          - Detailed deployment guide
+  ✓ .gitignore        - GitHub configuration
+
+================================================================================
+🚀 DEPLOY IN 5 MINUTES:
+================================================================================
+
+1. CREATE GITHUB REPO
+   - Go to github.com/new
+   - Name: "np-cpd-logger"
+   - Make it PUBLIC
+   - Click "Create repository"
+
+2. UPLOAD FILES
+   - Click "Add file" → "Upload files"
+   - Drag-and-drop these 3 files:
+     • index.html
+     • manifest.json
+     • sw.js
+   - Click "Commit changes"
+
+3. ENABLE GITHUB PAGES
+   - Go to Settings tab
+   - Scroll to "Pages"
+   - Branch: main | Folder: / (root)
+   - Click "Save"
+   - Wait 1-2 minutes
+
+4. TEST IT
+   - Visit: https://YOUR_USERNAME.github.io/np-cpd-logger
+   - Create a test entry
+   - Try offline mode (DevTools → Application → Offline)
+
+5. INSTALL ON MOBILE
+   - Android: Chrome menu → "Install app"
+   - iPhone: Share → "Add to Home Screen"
+
+================================================================================
+📝 FIRST TIME USING THE APP:
+================================================================================
+
+ENTRY FORM (Tab: ➕ New Entry)
+  ├─ Date & Hours (REQUIRED)
+  │  ├─ Episode Date
+  │  └─ Supernumerary Time (hours)
+  │
+  ├─ Patient & Clinical (REQUIRED)
+  │  ├─ Patient UR (de-identified only!)
+  │  ├─ Mentor/Consultant name
+  │  ├─ Presenting Problem
+  │  ├─ Clinical Assessment
+  │  ├─ Plan Made
+  │  ├─ Actions Taken
+  │  └─ Outcome (optional)
+  │
+  ├─ Domain (REQUIRED)
+  │  ├─ Primary Domain (dropdown)
+  │  └─ Sub-Activity (dropdown)
+  │
+  ├─ NMBA Standards (REQUIRED - select at least 1)
+  │  ├─ Standard 1: Assessment (1.1, 1.2, 1.3)
+  │  ├─ Standard 2: Planning (2.1, 2.2, 2.3, 2.4)
+  │  ├─ Standard 3: Prescribing (3.1, 3.2, 3.3)
+  │  └─ Standard 4: Systems (4.1, 4.2)
+  │
+  ├─ Extensions (OPTIONAL)
+  │  ├─ Diagnostics
+  │  ├─ Prescribing details
+  │  ├─ Admit/Discharge
+  │  ├─ Referrals
+  │  ├─ Certificates
+  │  └─ Comments
+  │
+  ├─ De-ID Check
+  │  └─ Click "Verify De-Identification" (catches: names, phones, MBS #, DOB)
+  │
+  ├─ Auto-Synthesis
+  │  └─ Click "Generate Brief Description" (creates summary from fields)
+  │
+  └─ Submit
+     └─ Click "💾 Save CPD Entry"
+
+DASHBOARD (Tab: 📊 Dashboard)
+  ├─ Total hours & entries counters
+  ├─ NMBA standards coverage (progress bars)
+  └─ Domain distribution (pie chart)
+
+VIEW ENTRIES (Tab: 📋 View Entries)
+  ├─ Search entries
+  ├─ Sort by date
+  └─ Delete individual entries
+
+SETTINGS (Tab: ⚙️ Settings)
+  ├─ Export to Excel (📊 Monash template)
+  ├─ Backup as JSON (💾)
+  ├─ Restore from JSON (📤)
+  ├─ Student info (name, ID)
+  ├─ Auto-backup toggle
+  ├─ Storage info
+  └─ Clear all data (⚠️ irreversible)
+
+================================================================================
+⚠️ IMPORTANT REMINDERS:
+================================================================================
+
+✅ DO:
+  ✓ Use Patient UR numbers ONLY (no names!)
+  ✓ Run de-ID check before saving
+  ✓ Select 1+ NMBA standards per entry
+  ✓ Regularly backup as JSON
+  ✓ Export to Excel weekly for safekeeping
+  ✓ Test offline mode on your mobile device
+
+❌ DON'T:
+  ✗ Enter patient names, dates of birth, phone numbers
+  ✗ Skip the de-identification check
+  ✗ Leave standards unchecked
+  ✗ Assume data persists if you clear browser cache
+  ✗ Edit the Excel export file and re-import (data loss risk)
+
+================================================================================
+🔧 TROUBLESHOOTING:
+================================================================================
+
+Problem: "Entries disappeared after refresh"
+→ Solution: Browser cleared LocalStorage. Check Settings → Privacy.
+           Export as JSON backup weekly to prevent this.
+
+Problem: "De-ID check flags legitimate clinical language"
+→ Solution: By design (privacy-first). Use abbreviations:
+           Bad: "Jane Smith, DOB 01/01/1985, chest pain"
+           Good: "50yo F with dyspnea, UR-12345"
+
+Problem: "App won't install on mobile"
+→ Solution: Force refresh (Ctrl+Shift+R), wait 30 seconds, clear cache.
+
+Problem: "Excel export has wrong columns"
+→ Solution: Edit exportToExcel() function in index.html to match template.
+           See SETUP.md for column mapping guide.
+
+Problem: "Can't select multiple standards"
+→ Solution: Click each standard button individually to toggle on/off.
+           Multiple selections ARE supported.
+
+================================================================================
+📊 EXPORTING TO MONASH TEMPLATE:
+================================================================================
+
+STEP 1: Prepare Your Template
+  • Download Template CPD Log.xlsx from Monash
+  • Open it (don't edit, just verify structure)
+  • Note which row data starts (usually Row 5)
+
+STEP 2: Export from App
+  • Settings tab → "📊 Export to Monash CPD Excel Template"
+  • Select your Template CPD Log.xlsx file
+  • Click Open
+
+STEP 3: Verify Download
+  • Check Downloads folder for CPD_Log_YYYY-MM-DD.xlsx
+  • Open it in Excel to verify entries are in correct columns
+  • All other sheets (student details, mentors, etc.) are preserved
+
+STEP 4: Submit to University
+  • Rename to final format required (e.g., "FirstName_LastName_CPD_Log.xlsx")
+  • Submit through Monash learning management system
+  • Keep a copy for your records
+
+================================================================================
+🔄 SYNCING BETWEEN DEVICES:
+================================================================================
+
+Mobile ←→ Desktop Sync via JSON Backup:
+
+Desktop → Mobile:
+  1. Desktop: Settings → "💾 Backup as JSON"
+  2. Move file to OneDrive/Google Drive
+  3. Mobile: Download from cloud storage
+  4. Mobile: Settings → "📤 Restore from JSON"
+  5. Select downloaded file
+
+Mobile → Desktop:
+  1. Mobile: Settings → "💾 Backup as JSON"
+  2. Move file to OneDrive/Google Drive
+  3. Desktop: Download from cloud storage
+  4. Desktop: Settings → "📤 Restore from JSON"
+  5. Select downloaded file
+
+Note: Backups MERGE with existing data (no data loss).
+
+================================================================================
+💡 TIPS FOR SUCCESS:
+================================================================================
+
+• Log entries DAILY - don't wait until end of week
+• Aim for 3-5 entries per NMBA standard (balanced portfolio)
+• Use dashboard to identify standard gaps
+• Vary your domains (clinical, professional, educational)
+• Record mentor discussions (required field)
+• Use auto-synthesis to quickly generate descriptions
+• Backup weekly as JSON
+• Export to Excel every 2 weeks to verify format
+• Test offline mode to ensure it works for you
+
+================================================================================
+📞 NEED HELP?
+================================================================================
+
+For detailed guidance, see:
+  • README.md - Feature overview & tips
+  • SETUP.md  - Full deployment & troubleshooting guide
+
+For customization:
+  • Column mapping: Edit exportToExcel() in index.html
+  • Colors/styling: Edit CSS variables in index.html
+  • NMBA standards: Modify STANDARDS array in index.html
+
+================================================================================
+🎓 YOUR LEARNING MATTERS!
+
+Keep detailed, thoughtful entries. Your CPD log tells the story of your
+growth as a Nurse Practitioner. Make it count!
+
+Good luck with your Monash University NP Master's! 🏥
+
+================================================================================

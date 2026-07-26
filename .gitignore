@@ -1,0 +1,54 @@
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Node (if using build tools in future)
+node_modules/
+package-lock.json
+yarn.lock
+dist/
+build/
+
+# Local development
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Backups
+*.bak
+*.backup
+*~.xlsx
+*~.json
+
+# Temporary files
+temp/
+tmp/
+.temp/
+
+# Browser cache (should not commit)
+.cache/
+cache/
+
+# Local test files
+test-*.xlsx
+test-*.json
+backup-*.json
+
+# Excel temp files
+~$*.xlsx
+
+# System backups
+*.~*
