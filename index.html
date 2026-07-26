@@ -18,6 +18,11 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #app {
+            min-height: 100vh;
         }
         .clinic-card {
             @apply bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 mb-4;
@@ -100,6 +105,26 @@
         .form-section > div > div {
             @apply mb-4;
         }
+        /* Tab content styling */
+        .tab-content {
+            @apply w-full min-h-screen bg-gray-200 px-0 py-8;
+        }
+        #tab-content-entry {
+            @apply bg-gray-200;
+        }
+        #entryForm {
+            @apply bg-white w-full rounded-none shadow-none border-none max-w-none mx-0 px-0 py-8;
+            @apply m-0;
+        }
+        #entryForm > .form-section {
+            @apply max-w-6xl mx-auto rounded-lg mb-0;
+        }
+        #entryForm > .form-section:first-child {
+            @apply mt-0;
+        }
+        #entryForm > .flex {
+            @apply max-w-6xl mx-auto;
+        }
         .btn {
             @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200;
         }
@@ -143,7 +168,7 @@
         </header>
 
         <!-- Main Container -->
-        <div class="max-w-6xl mx-auto px-4 py-6">
+        <div id="mainContainer" class="w-full">
             <!-- Navigation Tabs -->
             <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-300">
                 <button onclick="switchTab('entry')" id="tab-entry" class="tab-btn pb-3 px-4 border-b-4 border-green-600 font-semibold text-green-700">
@@ -411,9 +436,9 @@
 
                         <div class="mb-4">
                             <button onclick="exportToExcel()" class="btn btn-success w-full py-3 mb-2">
-                                📊 Export to Monash CPD Excel Template
+                                📊 Export CPD Log to Excel
                             </button>
-                            <small class="text-gray-600">Will prompt to select your Template CPD Log.xlsx</small>
+                            <small class="text-gray-600">Downloads all entries as a clean Excel sheet</small>
                         </div>
 
                         <div class="mb-4">
@@ -909,77 +934,114 @@
         // ============================================
 
         function exportToExcel() {
-            // Prompt user to select template file
-            const fileInput = document.getElementById('templateFileInput');
-            fileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+            if (!appState.entries.length) {
+                alert('❌ No entries to export. Please create some CPD entries first.');
+                return;
+            }
 
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const data = new Uint8Array(event.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
+            try {
+                // Create a new workbook with a clean sheet
+                const ws_data = [];
 
-                        // Get the Workplace Log sheet
-                        let worksheetName = 'Workplace Log';
-                        if (!workbook.SheetNames.includes(worksheetName)) {
-                            worksheetName = workbook.SheetNames[0];
-                        }
-                        const worksheet = workbook.Sheets[worksheetName];
+                // Header row
+                const headers = [
+                    'Date',
+                    'Hours',
+                    'Cumulative Hours',
+                    'Patient UR',
+                    'Presenting Problem',
+                    'Assessment',
+                    'Plan',
+                    'Actions',
+                    'Outcome',
+                    'Mentor',
+                    'Domain',
+                    'Sub-Activity',
+                    'Standard 1',
+                    'Standard 2',
+                    'Standard 3',
+                    'Standard 4',
+                    'Diagnostics',
+                    'Prescribing',
+                    'Admit/Discharge',
+                    'Referral',
+                    'Certificates',
+                    'Comments'
+                ];
+                ws_data.push(headers);
 
-                        // MONASH TEMPLATE COLUMN MAPPING (Data starts at Row 6)
-                        // Columns: B=Date, C=Hours, D=Cumulative, F=Brief Desc, G=Summary/Standards, H=Domain
-                        //          I-L=Standards 1-4, M=Diagnostics, N=Prescribing, O=Admit/Discharge, P=Referral, Q=Certificates, R=Comments
+                // Data rows - sorted by date
+                let cumulativeHours = 0;
+                const sortedEntries = [...appState.entries].sort((a, b) => new Date(a.episodeDate) - new Date(b.episodeDate));
 
-                        let rowIndex = 6; // Row 6 is first data row in template
-                        appState.entries.forEach(entry => {
-                            // Calculate cumulative hours up to this entry
-                            const cumulativeHours = appState.entries
-                                .filter(e => new Date(e.episodeDate) <= new Date(entry.episodeDate))
-                                .reduce((sum, e) => sum + (e.hoursSpent || 0), 0);
+                sortedEntries.forEach(entry => {
+                    cumulativeHours += entry.hoursSpent || 0;
 
-                            // Column mapping for Monash template
-                            const cellValues = {
-                                'B': entry.episodeDate,                                      // Date
-                                'C': entry.hoursSpent,                                      // Supernumerary time
-                                'D': cumulativeHours,                                       // Cumulative hours
-                                'F': entry.presentingProblem + ' → ' + entry.clinicalAssessment + ' → ' + entry.planMade, // Brief description
-                                'G': `Standards linked: ${entry.selectedStandards}. Plan: ${entry.planMade}. Actions: ${entry.actionsTaken}`,  // Summary/how linked
-                                'H': entry.primaryDomain,                                  // Domain
-                                'I': entry.selectedStandards.includes('1.1') || entry.selectedStandards.includes('1.2') || entry.selectedStandards.includes('1.3') ? 'X' : '',  // Standard 1
-                                'J': entry.selectedStandards.includes('2.1') || entry.selectedStandards.includes('2.2') || entry.selectedStandards.includes('2.3') || entry.selectedStandards.includes('2.4') ? 'X' : '',  // Standard 2
-                                'K': entry.selectedStandards.includes('3.1') || entry.selectedStandards.includes('3.2') || entry.selectedStandards.includes('3.3') ? 'X' : '',  // Standard 3
-                                'L': entry.selectedStandards.includes('4.1') || entry.selectedStandards.includes('4.2') ? 'X' : '',  // Standard 4
-                                'M': entry.diagnostics,                                    // Diagnostics
-                                'N': entry.prescribing,                                    // Prescribing
-                                'O': entry.admitDischarge,                                 // Admit/Discharge
-                                'P': entry.referralDetails,                                // Referral
-                                'Q': entry.certificates,                                   // Certificates
-                                'R': entry.additionalComments                              // Other Comments
-                            };
+                    const row = [
+                        entry.episodeDate,
+                        entry.hoursSpent,
+                        cumulativeHours,
+                        entry.patientUR,
+                        entry.presentingProblem,
+                        entry.clinicalAssessment,
+                        entry.planMade,
+                        entry.actionsTaken,
+                        entry.outcome,
+                        entry.mentorName,
+                        entry.primaryDomain,
+                        entry.subActivity,
+                        entry.selectedStandards.includes('1.1') || entry.selectedStandards.includes('1.2') || entry.selectedStandards.includes('1.3') ? '✓' : '',
+                        entry.selectedStandards.includes('2.1') || entry.selectedStandards.includes('2.2') || entry.selectedStandards.includes('2.3') || entry.selectedStandards.includes('2.4') ? '✓' : '',
+                        entry.selectedStandards.includes('3.1') || entry.selectedStandards.includes('3.2') || entry.selectedStandards.includes('3.3') ? '✓' : '',
+                        entry.selectedStandards.includes('4.1') || entry.selectedStandards.includes('4.2') ? '✓' : '',
+                        entry.diagnostics,
+                        entry.prescribing,
+                        entry.admitDischarge,
+                        entry.referralDetails,
+                        entry.certificates,
+                        entry.additionalComments
+                    ];
+                    ws_data.push(row);
+                });
 
-                            // Write to cells
-                            Object.entries(cellValues).forEach(([col, value]) => {
-                                const cellRef = XLSX.utils.encode_cell({ r: rowIndex - 1, c: XLSX.utils.decode_col(col) });
-                                if (value) {
-                                    worksheet[cellRef] = { v: value, t: 's' };
-                                }
-                            });
+                // Create worksheet and workbook
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
-                            rowIndex++;
-                        });
+                // Set column widths for better readability
+                ws['!cols'] = [
+                    { wch: 12 }, // Date
+                    { wch: 8 },  // Hours
+                    { wch: 12 }, // Cumulative
+                    { wch: 12 }, // Patient UR
+                    { wch: 20 }, // Presenting
+                    { wch: 20 }, // Assessment
+                    { wch: 20 }, // Plan
+                    { wch: 20 }, // Actions
+                    { wch: 20 }, // Outcome
+                    { wch: 15 }, // Mentor
+                    { wch: 15 }, // Domain
+                    { wch: 15 }, // Sub-Activity
+                    { wch: 10 }, // Std 1
+                    { wch: 10 }, // Std 2
+                    { wch: 10 }, // Std 3
+                    { wch: 10 }, // Std 4
+                    { wch: 20 }, // Diagnostics
+                    { wch: 20 }, // Prescribing
+                    { wch: 15 }, // Admit/Discharge
+                    { wch: 15 }, // Referral
+                    { wch: 15 }, // Certificates
+                    { wch: 20 }  // Comments
+                ];
 
-                        // Download the modified workbook
-                        XLSX.writeFile(workbook, `CPD_Log_${new Date().toISOString().split('T')[0]}.xlsx`);
-                        alert('✅ Excel export successful! Entries inserted into Workplace Log sheet starting at Row 6.');
-                    } catch (error) {
-                        alert('❌ Error processing Excel file: ' + error.message);
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            };
-            fileInput.click();
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'CPD Log');
+
+                // Save the file
+                XLSX.writeFile(wb, `CPD_Log_${new Date().toISOString().split('T')[0]}.xlsx`);
+                alert('✅ CPD Log exported successfully!');
+            } catch (error) {
+                alert('❌ Error creating Excel file: ' + error.message);
+            }
         }
 
         // ============================================
